@@ -2,19 +2,19 @@ import 'dart:math';
 import 'package:intl/intl.dart';
 
 class Task {
+  int id;
   String? title;
   String? description;
   DateTime? startDate;
-  DateTime? endDate;
   bool? isCompleted;
   Priority? priority;
   static List<Task> tasks = [];
 
   Task(
-      {this.title,
+      {required this.id,
+      this.title,
       this.description,
       this.startDate,
-      this.endDate,
       this.priority,
       this.isCompleted = false});
 
@@ -70,10 +70,10 @@ class Task {
     taskDescriptions.shuffle(Random());
 
     return Task(
+        id: tasks.length,
         title: titles[0],
         description: taskDescriptions[0],
         startDate: startDate,
-        endDate: endDate,
         priority: p1,
         isCompleted: isComp);
   }
@@ -95,51 +95,52 @@ class Task {
   }
 
   String toString() {
-    return "${this.title}\n${this.description}\n${this.startDate}\n${this.endDate}\n${this.isCompleted}\n${this.priority}";
+    return "${this.title}\n${this.description}\n${this.startDate}\n${this.isCompleted}\n${this.priority}";
   }
 
-  static List<Task> getBasics() {
+  static List<Task> getBasics(List<Task> parTasks) {
     List<Task> result = [];
-    for (Task task in tasks) {
+    for (Task task in parTasks) {
       if (task.priority == Priority.basic) result.add(task);
     }
 
     return result;
   }
 
-  static List<Task> getUrgents() {
+  static List<Task> getUrgents(List<Task> parTasks) {
     List<Task> result = [];
-    for (Task task in tasks) {
+    for (Task task in parTasks) {
       if (task.priority == Priority.urgent) result.add(task);
     }
 
     return result;
   }
 
-  static List<Task> getImportants() {
+  static List<Task> getImportants(List<Task> parTasks) {
     List<Task> result = [];
-    for (Task task in tasks) {
+    for (Task task in parTasks) {
       if (task.priority == Priority.important) result.add(task);
     }
 
     return result;
   }
 
-  static List<Task> getUrgentImportant() {
+  static List<Task> getUrgentImportant(List<Task> parTasks) {
     List<Task> result = [];
-    for (Task task in tasks) {
+    for (Task task in parTasks) {
       if (task.priority == Priority.urgentImportant) result.add(task);
     }
 
     return result;
   }
 
-  static List<Task> sortByPriority() {
+  static List<Task> sortByPriority({List<Task>? parTasks}) {
+    parTasks ??= tasks;
     List<Task> result = [];
-    List<Task> basic = getBasics();
-    List<Task> urgent = getUrgents();
-    List<Task> important = getImportants();
-    List<Task> urimpor = getUrgentImportant();
+    List<Task> basic = getBasics(parTasks);
+    List<Task> urgent = getUrgents(parTasks);
+    List<Task> important = getImportants(parTasks);
+    List<Task> urimpor = getUrgentImportant(parTasks);
     List<List<Task>> lists = [urimpor, urgent, important, basic];
 
     for (List<Task> list in lists) {
@@ -151,25 +152,25 @@ class Task {
     return result;
   }
 
-  static List<Task> sortByDate()
-  {
-    List<Task> sortedTasks = List.from(tasks);
+  static List<Task> sortByDate({List<Task>? parTasks}) {
+    parTasks ??= tasks;
+    List<Task> sortedTasks = List.from(parTasks);
     sortedTasks.sort((a, b) => a.startDate!.compareTo(b.startDate!));
     return sortedTasks;
-
   }
 
-  static List<Task> sortByCompleted() {
-    List<Task> sortedTasks = List.from(tasks);
-    sortedTasks.sort((a, b) => a.isCompleted! == b.isCompleted!
-        ? 0
-        : (a.isCompleted! ? 1 : -1));
+  static List<Task> sortByCompleted({List<Task>? parTasks}) {
+    parTasks ??= tasks;
+    List<Task> sortedTasks = List.from(parTasks);
+    sortedTasks.sort((a, b) =>
+        a.isCompleted! == b.isCompleted! ? 0 : (a.isCompleted! ? 1 : -1));
     return sortedTasks;
   }
 
-  static List<Task> getByDate(DateTime dateTime) {
+  static List<Task> getByDate(DateTime dateTime, {List<Task>? parTasks}) {
+    parTasks ??= tasks;
     List<Task> result = [];
-    for (Task task in tasks) {
+    for (Task task in parTasks) {
       final DateFormat formatter = DateFormat('yyyy-MM-dd');
       final String d1 = formatter.format(task.startDate!);
       final String d2 = formatter.format(dateTime);

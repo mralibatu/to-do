@@ -40,6 +40,8 @@ dependencies:
   date_picker_timeline: ^1.2.6
   buttons_tabbar: ^1.3.12
   segmented_button_slide: ^1.0.4
+  animate_icons: ^2.0.0
+  table_calendar: ^3.1.2
 
 dev_dependencies:
   flutter_test:

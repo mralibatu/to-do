@@ -5,6 +5,7 @@ import 'package:to_do/models/Task.dart';
 import 'package:to_do/NavBar.dart';
 import 'package:date_picker_timeline/date_picker_timeline.dart';
 import 'package:segmented_button_slide/segmented_button_slide.dart';
+import 'package:animate_icons/animate_icons.dart';
 
 List<Task> tasks = Task.getTasks();
 List<Task> list_tasks = new List.from(Task.tasks);
@@ -19,8 +20,11 @@ class ListTask extends StatefulWidget {
 class _ListTaskState extends State<ListTask> {
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
+  final AnimateIconController iconController = AnimateIconController();
+  DateTime? selectedDate;
   String searchBarTitle = "";
   int selectedOption = 0;
+  bool isDateSliderShow = true;
 
   int _getDaysCount() {
     DateTime now = DateTime.now();
@@ -31,28 +35,48 @@ class _ListTaskState extends State<ListTask> {
   void search(String query) {
     if (query.isEmpty) {
       setState(() {
-        list_tasks = tasks;
+        if (selectedDate != null) {
+          list_tasks = Task.getByDate(selectedDate!);
+        } else {
+          list_tasks = tasks;
+        }
       });
     } else {
-      setState(() {
-        list_tasks = tasks
-            .where((e) => e.title!.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-      });
+      if (selectedDate != null) {
+        setState(() {
+          list_tasks = Task.getByDate(selectedDate!)
+              .where(
+                  (e) => e.title!.toLowerCase().contains(query.toLowerCase()))
+              .toList();
+        });
+      } else {
+        setState(() {
+          list_tasks = tasks
+              .where(
+                  (e) => e.title!.toLowerCase().contains(query.toLowerCase()))
+              .toList();
+        });
+      }
     }
   }
 
   void showAll() {
-    list_tasks = new List.from(Task.tasks);
+    setState(() {
+      selectedDate = null;
+      list_tasks = new List.from(Task.tasks);
+    });
+
   }
 
-  void checkAll() {
+  void checkAll(int i) {
     for (Task task in Task.tasks) {
-      task.isCompleted = true;
+      task.isCompleted = i == 1 ? true : false;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('All Task Done!')),
-    );
+    if (i == 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('All Task Done!')),
+      );
+    }
   }
 
   void queryListener() {
@@ -78,8 +102,8 @@ class _ListTaskState extends State<ListTask> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      endDrawer: NavBar(),
-      backgroundColor: Color(0xff45C4B0),
+      //endDrawer: NavBar(),
+      backgroundColor: Colors.grey,
       body: SafeArea(
         child: Column(
           children: [
@@ -92,37 +116,68 @@ class _ListTaskState extends State<ListTask> {
                     padding: const EdgeInsets.only(left: 20),
                     child: Column(
                       children: [
-                        IconButton(
-                            onPressed: () {
-                              setState(() {
-                                checkAll();
-                              });
-                            },
-                            icon: Icon(Icons.checklist_outlined)),
-                        Text(
-                          "Check All",
-                          style: TextStyle(fontSize: 10),
+                        AnimateIcons(
+                          startIcon: Icons.check_circle,
+                          endIcon: Icons.check_circle_outline,
+                          size: 30.0,
+                          controller: iconController,
+                          // add this tooltip for the start icon
+                          startTooltip: 'Icons.add_circle',
+                          // add this tooltip for the end icon
+                          endTooltip: 'Icons.add_circle_outline',
+                          onStartIconPress: () {
+                            setState(() {
+                              checkAll(1);
+                            });
+                            return true;
+                          },
+                          onEndIconPress: () {
+                            setState(() {
+                              checkAll(0);
+                            });
+                            return true;
+                          },
+                          duration: Duration(milliseconds: 200),
+                          startIconColor: Colors.black,
+                          endIconColor: Colors.black,
+                          clockwise: false,
                         ),
                       ],
                     ),
                   ),
                   Text(
                     "To-Do it!",
-                    style: TextStyle(
-                        backgroundColor: Color(0xff45C4B0), fontSize: 24),
+                    style: TextStyle(fontSize: 24),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 20),
-                    child: Builder(
-                      builder: (context) => IconButton(
-                        onPressed: () {
-                          //Scaffold.of(context).openEndDrawer();
-                          setState(() {
-                            showAll();
-                          });
-                        },
-                        icon: Icon(Icons.menu),
-                      ),
+                    child: AnimateIcons(
+                      startIcon: Icons.select_all,
+                      endIcon: Icons.date_range,
+                      size: 30.0,
+                      controller: iconController,
+                      // add this tooltip for the start icon
+                      startTooltip: 'Icons.add_circle',
+                      // add this tooltip for the end icon
+                      endTooltip: 'Icons.add_circle_outline',
+                      onStartIconPress: () {
+                        setState(() {
+                          isDateSliderShow = false;
+                          showAll();
+                        });
+                        return true;
+                      },
+                      onEndIconPress: () {
+                        setState(() {
+                          isDateSliderShow = true;
+                          selectedDate = DateTime.now();
+                        });
+                        return true;
+                      },
+                      duration: Duration(milliseconds: 200),
+                      startIconColor: Colors.black,
+                      endIconColor: Colors.black,
+                      clockwise: false,
                     ),
                   ),
                 ],
@@ -134,81 +189,124 @@ class _ListTaskState extends State<ListTask> {
                 width: 400,
                 height: 50,
                 child: SearchBar(
+                  autoFocus: false,
                   controller: searchController,
                   hintText: "Search",
-                  leading: IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.search),
+                  leading: Padding(
+                    padding: const EdgeInsets.only(left: 15),
+                    child: Icon(Icons.search),
                   ),
                   onSubmitted: (String value) {},
                 ),
               ),
             ),
-            SizedBox(
-              height: 15,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Column(
-                children: [
-                  DatePicker(
-                    height: 120,
-                    DateTime.now(),
-                    selectionColor: Color(0xff9AEBA3),
-                    daysCount: _getDaysCount(),
-                    selectedTextColor: Colors.white,
-                    onDateChange: (date) {
-                      // New date selected
-                      setState(() {
-                        list_tasks = new List.from(Task.getByDate(date));
-                      });
-                    },
+            !isDateSliderShow
+                ? SizedBox()
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 15, 10, 0),
+                    child: Column(
+                      children: [
+                        DatePicker(
+                          height: 120,
+                          DateTime.now(),
+                          selectionColor: Colors.black12,
+                          daysCount: _getDaysCount(),
+                          selectedTextColor: Colors.white,
+                          onDateChange: (date) {
+                            setState(() {
+                              selectedDate = date;
+                              list_tasks = new List.from(Task.getByDate(date));
+                            });
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
             SizedBox(
               height: 80,
               width: 500,
-              child: SegmentedButtonSlide(
-                entries: const [
-                  SegmentedButtonSlideEntry(icon: Icons.sort, label: "Priority"),
-                  SegmentedButtonSlideEntry(icon: Icons.sort, label: "Date"),
-                  SegmentedButtonSlideEntry(icon: Icons.sort, label: "Done"),
-                ],
-                selectedEntry: selectedOption,
-                onChange: (selected) {
-                  setState(() {
-                    selectedOption = selected;
-                    switch(selectedOption)
-                    {
-                      case 0:
-                        list_tasks = new List.from(Task.sortByPriority());
-                      case 1:
-                        list_tasks = new List.from(Task.sortByDate());
-                      case 2:
-                        list_tasks = new List.from(Task.sortByCompleted());
-                    }
-
-                  });
-                },
-                colors: SegmentedButtonSlideColors(
-                    barColor: Colors.grey.withOpacity(0.2),
-                    backgroundSelectedColor: Color(0xff015958),
-                    foregroundSelectedColor: Colors.white,
-                    foregroundUnselectedColor: Colors.black,
-                    hoverColor: Colors.grey.withOpacity(0.8)
-                ),
-                slideShadow: [
-                  BoxShadow(
-                      color: Colors.white54,
-                      blurRadius: 5,
-                      spreadRadius: 1
-                  )
-                ],
-                margin: const EdgeInsets.all(16),
-                height: 40,
-              ),
+              child: isDateSliderShow
+                  ? SegmentedButtonSlide(
+                      entries: [
+                        SegmentedButtonSlideEntry(
+                            icon: Icons.sort, label: "Priority"),
+                        SegmentedButtonSlideEntry(
+                            icon: Icons.sort, label: "Done"),
+                      ],
+                      selectedEntry: selectedOption,
+                      onChange: (selected) {
+                        setState(() {
+                          selectedOption = selected;
+                          List<Task>? par =
+                              selectedDate != null ? list_tasks : null;
+                          switch (selectedOption) {
+                            case 0:
+                              list_tasks = new List.from(
+                                  Task.sortByPriority(parTasks: par));
+                            case 1:
+                              list_tasks = new List.from(
+                                  Task.sortByCompleted(parTasks: par));
+                          }
+                        });
+                      },
+                      colors: SegmentedButtonSlideColors(
+                          barColor: Colors.grey.withOpacity(0.2),
+                          backgroundSelectedColor: Color(0xff015958),
+                          foregroundSelectedColor: Colors.white,
+                          foregroundUnselectedColor: Colors.black,
+                          hoverColor: Colors.grey.withOpacity(0.8)),
+                      slideShadow: [
+                        BoxShadow(
+                            color: Colors.white54,
+                            blurRadius: 5,
+                            spreadRadius: 1)
+                      ],
+                      margin: const EdgeInsets.all(16),
+                      height: 40,
+                    )
+                  : SegmentedButtonSlide(
+                      entries: [
+                        SegmentedButtonSlideEntry(
+                            icon: Icons.sort, label: "Priority"),
+                        SegmentedButtonSlideEntry(
+                            icon: Icons.sort, label: "Date"),
+                        SegmentedButtonSlideEntry(
+                            icon: Icons.sort, label: "Done"),
+                      ],
+                      selectedEntry: selectedOption,
+                      onChange: (selected) {
+                        setState(() {
+                          selectedOption = selected;
+                          List<Task>? par =
+                              selectedDate != null ? list_tasks : null;
+                          switch (selectedOption) {
+                            case 0:
+                              list_tasks = new List.from(
+                                  Task.sortByPriority(parTasks: par));
+                            case 1:
+                              list_tasks =
+                                  new List.from(Task.sortByDate(parTasks: par));
+                            case 2:
+                              list_tasks = new List.from(
+                                  Task.sortByCompleted(parTasks: par));
+                          }
+                        });
+                      },
+                      colors: SegmentedButtonSlideColors(
+                          barColor: Colors.grey.withOpacity(0.2),
+                          backgroundSelectedColor: Color(0xff015958),
+                          foregroundSelectedColor: Colors.white,
+                          foregroundUnselectedColor: Colors.black,
+                          hoverColor: Colors.grey.withOpacity(0.8)),
+                      slideShadow: [
+                        BoxShadow(
+                            color: Colors.white54,
+                            blurRadius: 5,
+                            spreadRadius: 1)
+                      ],
+                      margin: const EdgeInsets.all(16),
+                      height: 40,
+                    ),
             ),
             Expanded(
               child: Padding(
@@ -231,22 +329,27 @@ class _ListTaskState extends State<ListTask> {
                         child: Icon(Icons.edit_calendar, color: Colors.white),
                       ),
                       secondaryBackground: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(40),
+                          color: Colors.red,
+                        ),
                         //Delete slider background
                         alignment: Alignment.centerRight,
                         padding: EdgeInsets.only(right: 20.0),
-                        color: Colors.red,
                         child: Icon(Icons.delete, color: Colors.white),
                       ),
                       confirmDismiss: (direction) async {
                         if (direction == DismissDirection.startToEnd) {
-                          Navigator.pushNamed(context, "/create-task",
-                              arguments: index);
+                          Navigator.pushNamed(context, "/edit-task", arguments: list_tasks[index]);
                         } else if (direction == DismissDirection.endToStart) {
                           setState(() {
-                            if (tasks[index].title == searchBarTitle)
-                              searchBarTitle = Task.getRandomTask().title!;
-                            searchController.clear();
                             tasks.removeAt(index); // Öğeyi listeden kaldır
+                            if(isDateSliderShow && selectedDate != null)
+                              {
+                                list_tasks = Task.getByDate(selectedDate!);
+                              }else{
+                              list_tasks = tasks;
+                            }
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Task silindi')),
@@ -255,16 +358,6 @@ class _ListTaskState extends State<ListTask> {
                       },
 
                       child: Card(
-                        color: (list_tasks[index].priority ==
-                            Priority.basic)
-                            ? Colors.grey[600]
-                            : list_tasks[index].priority ==
-                            Priority.urgent
-                            ? Colors.red[400]
-                            : list_tasks[index].priority ==
-                            Priority.important
-                            ? Colors.orange[600]
-                            : Colors.red[900],
                         child: ListTile(
                           leading: Container(
                             child: IconButton(
@@ -282,12 +375,56 @@ class _ListTaskState extends State<ListTask> {
                               ),
                             ),
                           ),
-                          title: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          title: Column(
                             children: [
-                              Text(
-                                list_tasks[index].title!,
-                                style: TextStyle(color: Color(0xff024059)),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    list_tasks[index].title!,
+                                    style: TextStyle(color: Color(0xff024059)),
+                                  ),
+                                  IconButton(onPressed: () {
+                                    showAdaptiveDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Row(
+                                          children: [
+                                            Text("${list_tasks[index].title}"),
+                                          SizedBox(width: 10,),
+                                          Icon(Icons.crisis_alert,
+                                              color: list_tasks[index].priority ==
+                                                  Priority.basic
+                                                  ? Colors.grey
+                                                  : list_tasks[index].priority ==
+                                                  Priority.urgent
+                                                  ? Colors.orange[300]
+                                                  : list_tasks[index].priority ==
+                                                  Priority.important
+                                                  ? Colors.red[300]
+                                                  : Colors.red),
+                                          ],
+                                        ),
+                                        content: Text("${list_tasks[index].description}"),
+                                      )
+                                    );
+                                  }, icon: Icon(Icons.crisis_alert,
+                                      color: list_tasks[index].priority ==
+                                              Priority.basic
+                                          ? Colors.grey
+                                          : list_tasks[index].priority ==
+                                                  Priority.urgent
+                                              ? Colors.orange[300]
+                                              : list_tasks[index].priority ==
+                                                      Priority.important
+                                                  ? Colors.red[300]
+                                                  : Colors.red)),
+                                ],
+                              ),
+                              isDateSliderShow ? SizedBox() :
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                  child: isDateSliderShow ? Text("") : Text("${list_tasks[index].startDate?.day} / ${list_tasks[index].startDate?.month}", style: TextStyle(fontSize: 15),)
                               ),
                             ],
                           ),
@@ -308,7 +445,11 @@ class _ListTaskState extends State<ListTask> {
           Task newTask =
               await Navigator.pushNamed(context, "/create-task") as Task;
           setState(() {
-            Task.tasks.add(newTask);
+            if(newTask != null)
+              {
+                Task.tasks.add(newTask);
+              }
+
           });
         },
         child:
