@@ -55,7 +55,7 @@ class Task {
     DateTime now = DateTime.now();
     DateTime lastDayofMonth = DateTime(now.year, now.month + 1, 0);
 
-    DateTime startDate = DateTime.now();
+    DateTime startDate = DateTime(now.year, now.month - 1, 0);;
     DateTime endDate =
         DateTime.now().add(Duration(days: lastDayofMonth.day - now.day));
     int differenceInDays = endDate.difference(startDate).inDays;
@@ -92,6 +92,21 @@ class Task {
     List<Task> tempTask = new List.from(tasks);
     tempTask.shuffle(Random());
     return tempTask[0];
+  }
+
+  static int getTaskCountByDate(DateTime date) {
+    final DateFormat formatter = DateFormat('yyyy-MM-dd');
+    String d1 = "";
+    String d2 = "";
+    int count = 0;
+    for (Task task in tasks) {
+      d1 = formatter.format(date);
+      d2 = formatter.format(task.startDate!);
+      if (d1 == d2) {
+        count++;
+      }
+    }
+    return count;
   }
 
   String toString() {

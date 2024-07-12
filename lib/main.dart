@@ -8,7 +8,7 @@ import 'package:to_do/models/Task.dart';
 void main() {
   runApp(MaterialApp(
     debugShowCheckedModeBanner: false,
-    //initialRoute: '/calendar', //This page will be there soon
+    initialRoute: '/calendar', //This page will be there soon
     routes: {
        '/': (context) => ListTask(),
       '/create-task':(context) => CreateTask(),
