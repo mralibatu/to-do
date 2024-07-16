@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:to_do/models/Task.dart';
 import 'package:animate_icons/animate_icons.dart';
+import 'package:intl/intl.dart';
 
 bool isDarkMode = false;
+int j = 0;
 
 class Calendar extends StatefulWidget {
   const Calendar({super.key});
@@ -14,15 +16,58 @@ class Calendar extends StatefulWidget {
 class _CalendarState extends State<Calendar> {
   final AnimateIconController iconController = AnimateIconController();
 
+  String getMonthName() {
+    DateTime now = DateTime.now();
+    final DateFormat formatter = DateFormat('MMM');
+    return formatter.format(DateTime(now.year, now.month + j));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "Calendar",
+              style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.grey[800]),
+            ),
+            Row(
+              children: [
+                IconButton(
+                    color: isDarkMode ? Colors.white : Colors.grey[800],
+                    onPressed: () {
+                      setState(() {
+                        j = j - 1;
+                      });
+                    },
+                    icon: Icon(Icons.arrow_back_ios_new)),
+                Text(
+                  "${getMonthName()}",
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.grey[800],
+                  ),
+                ),
+                IconButton(
+                    color: isDarkMode ? Colors.white : Colors.grey[800],
+                    onPressed: () {
+                      setState(() {
+                        j = j + 1;
+                      });
+                    },
+                    icon: Icon(Icons.arrow_forward_ios)),
+              ],
+            ),
+          ],
+        ),
+        backgroundColor: !isDarkMode ? Colors.white : Colors.grey[800],
+      ),
       floatingActionButton: Container(
         decoration: BoxDecoration(
-          color: !isDarkMode ? Colors.blue : Colors.grey[800],
-          shape: BoxShape.circle
-        ),
+            color: !isDarkMode ? Colors.blue : Colors.grey[800],
+            shape: BoxShape.circle),
         child: AnimateIcons(
           startIcon: Icons.dark_mode,
           endIcon: Icons.sunny,
@@ -79,7 +124,9 @@ Widget monthCalendar() {
     ));
   }
   for (int i = getWeekDay(); i <= 7; i++) {
-    days.add(CalendarDay(currentDay: i - getWeekDay() + 1, now: DateTime(now.year, now.month, i - 5)));
+    days.add(CalendarDay(
+        currentDay: i - getWeekDay() + 1,
+        now: DateTime(now.year, now.month, i - 5)));
     // days.add(Column(
     //   children: [
     //     Text("0${i - getWeekDay() + 1}", style: TextStyle(fontSize: 25)),
@@ -161,7 +208,8 @@ class CalendarHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       char,
-      style: TextStyle(fontSize: 15, color: isDarkMode ? Colors.white : Colors.black87),
+      style: TextStyle(
+          fontSize: 15, color: isDarkMode ? Colors.white : Colors.black87),
     );
   }
 }
@@ -213,44 +261,61 @@ class CalendarDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Task> currentTasks = Task.getByDate(DateTime(now.year, now.month + 1, currentDay));
+    List<Task> currentTasks =
+        Task.getByDate(DateTime(now.year, now.month + 1, currentDay));
     return InkWell(
       onTap: () {
-        currentTasks.length == 0 ? null :
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: !isDarkMode ? Colors.white : Colors.grey[800],
-                title: Text("Tasks",
-                  style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),),
-                content: Container(
-                  color: !isDarkMode ? Colors.white : Colors.grey[800] ,
-                  height: currentTasks.length == 1 ? 100 : currentTasks.length == 2 ? 220 : 300,
-                  width: 50,
-                  child: ListView.builder(
-                    scrollDirection: Axis.vertical,
-                    itemCount: currentTasks.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
-                        child: Column(
-                          children: [
-                            Text("${currentTasks[index].title}\n\n${currentTasks[index].description}",
-                            style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),),
-                            index < currentTasks.length - 1 ? Padding(
-                              padding: const EdgeInsets.only(top: 15),
-                              child: Divider(),
-                            ) : SizedBox(),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-            );
-          },
-        );
+        currentTasks.length == 0
+            ? null
+            : showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    backgroundColor:
+                        !isDarkMode ? Colors.white : Colors.grey[800],
+                    title: Text(
+                      "Tasks",
+                      style: TextStyle(
+                          color: isDarkMode ? Colors.white : Colors.black),
+                    ),
+                    content: Container(
+                      color: !isDarkMode ? Colors.white : Colors.grey[800],
+                      height: currentTasks.length == 1
+                          ? 100
+                          : currentTasks.length == 2
+                              ? 220
+                              : 300,
+                      width: 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.vertical,
+                        itemCount: currentTasks.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 5),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "${currentTasks[index].title}\n\n${currentTasks[index].description}",
+                                  style: TextStyle(
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : Colors.black),
+                                ),
+                                index < currentTasks.length - 1
+                                    ? Padding(
+                                        padding: const EdgeInsets.only(top: 15),
+                                        child: Divider(),
+                                      )
+                                    : SizedBox(),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
       },
       highlightColor: Colors.blue,
       splashColor: Colors.lightBlueAccent,
@@ -263,17 +328,35 @@ class CalendarDay extends StatelessWidget {
         child: Column(
           children: currentDay < 10
               ? [
-            Text("0${currentDay}", style: TextStyle(fontSize: 25,color: isDarkMode ? Colors.white : Colors.black)),
-            Text(
-                "${Task.getTaskCountByDate(
-                    DateTime(now.year, now.month + 1, currentDay))}",style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),),
-          ]
+                  Text("0${currentDay}",
+                      style: TextStyle(
+                          fontSize: 25,
+                          color: isDarkMode ? Colors.white : Colors.black)),
+                  Text(
+                    ".\n" *
+                        Task.getTaskCountByDate(DateTime(now.year, now.month + 1, currentDay), true),
+                    style: TextStyle(
+                        fontSize: 20,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                        height: 0.3),
+                  ),
+                ]
               : [
-            Text("${currentDay}", style: TextStyle(fontSize: 25,color: isDarkMode ? Colors.white : Colors.black)),
-            Text(
-                "${Task.getTaskCountByDate(
-                    DateTime(now.year, now.month + 1, currentDay))}",style: TextStyle(color: isDarkMode ? Colors.white : Colors.black)),
-          ],
+                  Text("${currentDay}",
+                      style: TextStyle(
+                          fontSize: 25,
+                          color: isDarkMode ? Colors.white : Colors.black)),
+                  Text(
+                    ".\n" *
+                        Task.getTaskCountByDate(
+                            DateTime(now.year, now.month + 1, currentDay),
+                            true),
+                    style: TextStyle(
+                        fontSize: 20,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                        height: 0.3),
+                  ),
+                ],
         ),
       ),
     );
@@ -282,6 +365,6 @@ class CalendarDay extends StatelessWidget {
 
 int getWeekDay() {
   DateTime now = DateTime.now();
-  DateTime firstDayOfMonth = DateTime(now.year, now.month - 1, 1);
+  DateTime firstDayOfMonth = DateTime(now.year, now.month + j, 1);
   return firstDayOfMonth.weekday;
 }

@@ -79,36 +79,39 @@ class CreateTaskState extends State<CreateTask> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: TableCalendar(
-                focusedDay: startDate ?? DateTime.now(),
-                firstDay: DateTime.now(),
-                lastDay: DateTime(DateTime.now().year + 1),
-                selectedDayPredicate: (day) {
-                  return isSameDay(startDate, day);
-                },
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    startDate = selectedDay;
-                    startDate = focusedDay; // update `_focusedDay` here as well
-                  });
-                },
+            Container(
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: TableCalendar(
+                  focusedDay: startDate ?? DateTime.now(),
+                  firstDay: DateTime.now(),
+                  lastDay: DateTime(DateTime.now().year + 1),
+                  selectedDayPredicate: (day) {
+                    return isSameDay(startDate, day);
+                  },
+                  onDaySelected: (selectedDay, focusedDay) {
+                    setState(() {
+                      startDate = selectedDay;
+                      startDate = focusedDay; // update `_focusedDay` here as well
+                    });
+                  },
+                ),
+                // SfDateRangePicker(
+                //   initialSelectedRanges: [
+                //     PickerDateRange(startDate, endDate)
+                //   ],
+                //   headerStyle: DateRangePickerHeaderStyle(
+                //       backgroundColor: Colors.grey[300]),
+                //   backgroundColor: Colors.grey[300],
+                //   minDate: DateTime.now(),
+                //   onSelectionChanged: _onSelectionChanged,
+                //   view: _dateRangePickerView,
+                //   selectionMode: DateRangePickerSelectionMode.range,
+                //   monthCellStyle: DateRangePickerMonthCellStyle(
+                //       blackoutDatesDecoration: BoxDecoration(color: Colors.blue)),
+                // ),
               ),
-              // SfDateRangePicker(
-              //   initialSelectedRanges: [
-              //     PickerDateRange(startDate, endDate)
-              //   ],
-              //   headerStyle: DateRangePickerHeaderStyle(
-              //       backgroundColor: Colors.grey[300]),
-              //   backgroundColor: Colors.grey[300],
-              //   minDate: DateTime.now(),
-              //   onSelectionChanged: _onSelectionChanged,
-              //   view: _dateRangePickerView,
-              //   selectionMode: DateRangePickerSelectionMode.range,
-              //   monthCellStyle: DateRangePickerMonthCellStyle(
-              //       blackoutDatesDecoration: BoxDecoration(color: Colors.blue)),
-              // ),
             ),
             SizedBox(
               height: 25,
@@ -190,7 +193,7 @@ class CreateTaskState extends State<CreateTask> {
                         }
                       });
                     },
-                    child: Text('Show Menu'),
+                    child: Text('Select a priority'),
                   )
                 ],
               ),

@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class Task {
   int id;
@@ -55,7 +57,8 @@ class Task {
     DateTime now = DateTime.now();
     DateTime lastDayofMonth = DateTime(now.year, now.month + 1, 0);
 
-    DateTime startDate = DateTime(now.year, now.month - 1, 0);;
+    DateTime startDate = DateTime(now.year, now.month - 1, 0);
+    ;
     DateTime endDate =
         DateTime.now().add(Duration(days: lastDayofMonth.day - now.day));
     int differenceInDays = endDate.difference(startDate).inDays;
@@ -78,6 +81,54 @@ class Task {
         isCompleted: isComp);
   }
 
+  static void save() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String encodedData = Task.encode(tasks);
+
+    await prefs.setString('tasks_key', encodedData);
+  }
+
+  static Future<List<Task>> get() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    final String? taskString = prefs.getString('tasks_key');
+
+    final List<Task> tasks = Task.decode(taskString!);
+
+    return tasks;
+  }
+
+  factory Task.fromJson(Map<String, dynamic> jsonData) {
+    return Task(
+      id: jsonData['id'],
+      title: jsonData['title'],
+      description: jsonData['desc'],
+      startDate: DateTime.parse(jsonData['startDate']),
+      priority: Priority.values
+          .firstWhere((e) => e.toString() == jsonData['priority']),
+      isCompleted: jsonData['isCompleted'],
+    );
+  }
+
+  static Map<String, dynamic> toMap(Task task) => {
+        'id': task.id,
+        'title': task.title,
+        'desc': task.description,
+        'startDate': task.startDate?.toIso8601String(),
+        'priority': task.priority?.toString(),
+        'isCompleted': task.isCompleted,
+      };
+
+  static String encode(List<Task> tasks) => json.encode(
+        tasks.map<Map<String, dynamic>>((task) => Task.toMap(task)).toList(),
+      );
+
+  static List<Task> decode(String tasks) =>
+      (json.decode(tasks) as List<dynamic>)
+          .map<Task>((item) => Task.fromJson(item))
+          .toList();
+
   static List<Task> getTasks() {
     return tasks;
   }
@@ -89,12 +140,12 @@ class Task {
   }
 
   static Task getRandomTask() {
-    List<Task> tempTask = new List.from(tasks);
+    List<Task> tempTask = List.from(tasks);
     tempTask.shuffle(Random());
     return tempTask[0];
   }
 
-  static int getTaskCountByDate(DateTime date) {
+  static int getTaskCountByDate(DateTime date, bool isLimited) {
     final DateFormat formatter = DateFormat('yyyy-MM-dd');
     String d1 = "";
     String d2 = "";
@@ -105,6 +156,10 @@ class Task {
       if (d1 == d2) {
         count++;
       }
+    }
+    if (isLimited) {
+      if(count > 3)
+        return 3;
     }
     return count;
   }

@@ -2,13 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:to_do/models/Task.dart';
-import 'package:to_do/NavBar.dart';
 import 'package:date_picker_timeline/date_picker_timeline.dart';
 import 'package:segmented_button_slide/segmented_button_slide.dart';
 import 'package:animate_icons/animate_icons.dart';
 
-List<Task> tasks = Task.getTasks();
-List<Task> list_tasks = new List.from(Task.tasks);
+List<Task> list_tasks = List.from(Task.tasks);
 
 class ListTask extends StatefulWidget {
   const ListTask({super.key});
@@ -38,7 +36,7 @@ class _ListTaskState extends State<ListTask> {
         if (selectedDate != null) {
           list_tasks = Task.getByDate(selectedDate!);
         } else {
-          list_tasks = tasks;
+          list_tasks = Task.tasks;
         }
       });
     } else {
@@ -51,7 +49,7 @@ class _ListTaskState extends State<ListTask> {
         });
       } else {
         setState(() {
-          list_tasks = tasks
+          list_tasks = Task.tasks
               .where(
                   (e) => e.title!.toLowerCase().contains(query.toLowerCase()))
               .toList();
@@ -65,7 +63,6 @@ class _ListTaskState extends State<ListTask> {
       selectedDate = null;
       list_tasks = new List.from(Task.tasks);
     });
-
   }
 
   void checkAll(int i) {
@@ -85,10 +82,20 @@ class _ListTaskState extends State<ListTask> {
 
   @override
   void initState() {
-    Task.createTasks(120);
+    //Task.createTasks(100);
+    loadTasks();
     searchController.addListener(queryListener);
-    searchBarTitle = Task.getRandomTask().title!;
     super.initState();
+  }
+
+  Future<void> loadTasks() async {
+    // Assuming this widget has an asynchronous context (e.g., inside an async function)
+    List<Task> tasks = await Task.get();
+
+    setState(() {
+      Task.tasks = tasks;
+      list_tasks = Task.sortByPriority(); // Assuming list_tasks is also a List<Task> in your State
+    });
   }
 
   @override
@@ -114,34 +121,54 @@ class _ListTaskState extends State<ListTask> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 20),
-                    child: Column(
+                    child: Row(
                       children: [
-                        AnimateIcons(
-                          startIcon: Icons.check_circle,
-                          endIcon: Icons.check_circle_outline,
-                          size: 30.0,
-                          controller: iconController,
-                          // add this tooltip for the start icon
-                          startTooltip: 'Icons.add_circle',
-                          // add this tooltip for the end icon
-                          endTooltip: 'Icons.add_circle_outline',
-                          onStartIconPress: () {
-                            setState(() {
-                              checkAll(1);
-                            });
-                            return true;
-                          },
-                          onEndIconPress: () {
-                            setState(() {
-                              checkAll(0);
-                            });
-                            return true;
-                          },
-                          duration: Duration(milliseconds: 200),
-                          startIconColor: Colors.black,
-                          endIconColor: Colors.black,
-                          clockwise: false,
-                        ),
+                        IconButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, "/calendar");
+                            },
+                            icon: Icon(Icons.calendar_month)),
+                        // IconButton(
+                        //     onPressed: () {
+                        //       Task.save();
+                        //     },
+                        //     icon: Icon(Icons.save)),
+                        // IconButton(
+                        //     onPressed: () {
+                        //       setState(() {
+                        //         Task.get();
+                        //         list_tasks = Task.tasks;
+                        //       });
+                        //     },
+                        //     icon: Icon(Icons.get_app)),
+
+                        // //Check All Done
+                        // AnimateIcons(
+                        //   startIcon: Icons.check_circle,
+                        //   endIcon: Icons.check_circle_outline,
+                        //   size: 30.0,
+                        //   controller: iconController,
+                        //   // add this tooltip for the start icon
+                        //   startTooltip: 'Icons.add_circle',
+                        //   // add this tooltip for the end icon
+                        //   endTooltip: 'Icons.add_circle_outline',
+                        //   onStartIconPress: () {
+                        //     setState(() {
+                        //       checkAll(1);
+                        //     });
+                        //     return true;
+                        //   },
+                        //   onEndIconPress: () {
+                        //     setState(() {
+                        //       checkAll(0);
+                        //     });
+                        //     return true;
+                        //   },
+                        //   duration: Duration(milliseconds: 200),
+                        //   startIconColor: Colors.black,
+                        //   endIconColor: Colors.black,
+                        //   clockwise: false,
+                        // ),
                       ],
                     ),
                   ),
@@ -308,133 +335,178 @@ class _ListTaskState extends State<ListTask> {
                       height: 40,
                     ),
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: ListView.builder(
-                  itemCount: list_tasks.length,
-                  itemBuilder: (context, index) {
-                    return Dismissible(
-                      //Slide operations
-                      key: UniqueKey(),
-                      direction: DismissDirection.horizontal,
-                      background: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(40),
-                          color: Colors.blue,
-                        ),
-                        //Completed slider background
-                        alignment: Alignment.centerLeft,
-                        padding: EdgeInsets.only(left: 20.0),
-                        child: Icon(Icons.edit_calendar, color: Colors.white),
-                      ),
-                      secondaryBackground: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(40),
-                          color: Colors.red,
-                        ),
-                        //Delete slider background
-                        alignment: Alignment.centerRight,
-                        padding: EdgeInsets.only(right: 20.0),
-                        child: Icon(Icons.delete, color: Colors.white),
-                      ),
-                      confirmDismiss: (direction) async {
-                        if (direction == DismissDirection.startToEnd) {
-                          Navigator.pushNamed(context, "/edit-task", arguments: list_tasks[index]);
-                        } else if (direction == DismissDirection.endToStart) {
-                          setState(() {
-                            tasks.removeAt(index); // Öğeyi listeden kaldır
-                            if(isDateSliderShow && selectedDate != null)
-                              {
-                                list_tasks = Task.getByDate(selectedDate!);
-                              }else{
-                              list_tasks = tasks;
-                            }
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Task silindi')),
-                          );
-                        }
-                      },
-
-                      child: Card(
-                        child: ListTile(
-                          leading: Container(
-                            child: IconButton(
-                              onPressed: () {
+            list_tasks.length == 0
+                ? Text("There is no task!")
+                : Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: ListView.builder(
+                        itemCount: list_tasks.length,
+                        itemBuilder: (context, index) {
+                          return Dismissible(
+                            //Slide operations
+                            key: UniqueKey(),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(40),
+                                color: Colors.blue,
+                              ),
+                              //Completed slider background
+                              alignment: Alignment.centerLeft,
+                              padding: EdgeInsets.only(left: 20.0),
+                              child: Icon(Icons.edit_calendar,
+                                  color: Colors.white),
+                            ),
+                            secondaryBackground: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(40),
+                                color: Colors.red,
+                              ),
+                              //Delete slider background
+                              alignment: Alignment.centerRight,
+                              padding: EdgeInsets.only(right: 20.0),
+                              child: Icon(Icons.delete, color: Colors.white),
+                            ),
+                            confirmDismiss: (direction) async {
+                              if (direction == DismissDirection.startToEnd) {
+                                Navigator.pushNamed(context, "/edit-task",
+                                    arguments: list_tasks[index]);
+                              } else if (direction ==
+                                  DismissDirection.endToStart) {
                                 setState(() {
-                                  list_tasks[index].isCompleted =
-                                      !list_tasks[index].isCompleted!;
+                                  Task.tasks.removeAt(index);
+                                  list_tasks.removeAt(index);
+                                  if (isDateSliderShow &&
+                                      selectedDate != null) {
+                                    switch (selectedOption) {
+                                      case 0:
+                                        list_tasks = new List.from(
+                                            Task.sortByPriority(parTasks: list_tasks));
+                                      case 1:
+                                        list_tasks =
+                                        new List.from(Task.sortByDate(parTasks: list_tasks));
+                                      case 2:
+                                        list_tasks = new List.from(
+                                            Task.sortByCompleted(parTasks: list_tasks));
+                                    }
+                                    list_tasks = Task.getByDate(selectedDate!);
+                                  } else {
+                                    switch (selectedOption) {
+                                      case 0:
+                                        list_tasks = new List.from(
+                                            Task.sortByPriority(parTasks: list_tasks));
+                                      case 1:
+                                        list_tasks = new List.from(
+                                            Task.sortByCompleted(parTasks: list_tasks));
+                                    }
+                                  }
                                 });
-                              },
-                              icon: Icon(
-                                list_tasks[index].isCompleted!
-                                    ? Icons.check_box
-                                    : Icons.check_box_outline_blank,
-                                color: Color(0xff026873),
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Task silindi')),
+                                );
+                              }
+                            },
+
+                            child: Card(
+                              child: ListTile(
+                                leading: Container(
+                                  child: IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        list_tasks[index].isCompleted =
+                                            !list_tasks[index].isCompleted!;
+                                      });
+                                    },
+                                    icon: Icon(
+                                      list_tasks[index].isCompleted!
+                                          ? Icons.check_box
+                                          : Icons.check_box_outline_blank,
+                                      color: Color(0xff026873),
+                                    ),
+                                  ),
+                                ),
+                                title: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          list_tasks[index].title!,
+                                          style: TextStyle(
+                                              color: Color(0xff024059)),
+                                        ),
+                                        IconButton(
+                                            onPressed: () {
+                                              showAdaptiveDialog(
+                                                  context: context,
+                                                  builder:
+                                                      (context) => AlertDialog(
+                                                            title: Row(
+                                                              children: [
+                                                                Text(
+                                                                    "${list_tasks[index].title}"),
+                                                                SizedBox(
+                                                                  width: 10,
+                                                                ),
+                                                                Icon(
+                                                                    Icons
+                                                                        .crisis_alert,
+                                                                    color: list_tasks[index].priority ==
+                                                                            Priority
+                                                                                .basic
+                                                                        ? Colors
+                                                                            .grey
+                                                                        : list_tasks[index].priority ==
+                                                                                Priority.urgent
+                                                                            ? Colors.orange[300]
+                                                                            : list_tasks[index].priority == Priority.important
+                                                                                ? Colors.red[300]
+                                                                                : Colors.red),
+                                                              ],
+                                                            ),
+                                                            content: Text(
+                                                                "${list_tasks[index].description}"),
+                                                          ));
+                                            },
+                                            icon: Icon(Icons.crisis_alert,
+                                                color: list_tasks[index]
+                                                            .priority ==
+                                                        Priority.basic
+                                                    ? Colors.grey
+                                                    : list_tasks[index]
+                                                                .priority ==
+                                                            Priority.urgent
+                                                        ? Colors.orange[300]
+                                                        : list_tasks[index]
+                                                                    .priority ==
+                                                                Priority
+                                                                    .important
+                                                            ? Colors.red[300]
+                                                            : Colors.red)),
+                                      ],
+                                    ),
+                                    isDateSliderShow
+                                        ? SizedBox()
+                                        : Align(
+                                            alignment: Alignment.bottomRight,
+                                            child: isDateSliderShow
+                                                ? Text("")
+                                                : Text(
+                                                    "${list_tasks[index].startDate?.day} / ${list_tasks[index].startDate?.month}",
+                                                    style:
+                                                        TextStyle(fontSize: 15),
+                                                  )),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          title: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    list_tasks[index].title!,
-                                    style: TextStyle(color: Color(0xff024059)),
-                                  ),
-                                  IconButton(onPressed: () {
-                                    showAdaptiveDialog(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: Row(
-                                          children: [
-                                            Text("${list_tasks[index].title}"),
-                                          SizedBox(width: 10,),
-                                          Icon(Icons.crisis_alert,
-                                              color: list_tasks[index].priority ==
-                                                  Priority.basic
-                                                  ? Colors.grey
-                                                  : list_tasks[index].priority ==
-                                                  Priority.urgent
-                                                  ? Colors.orange[300]
-                                                  : list_tasks[index].priority ==
-                                                  Priority.important
-                                                  ? Colors.red[300]
-                                                  : Colors.red),
-                                          ],
-                                        ),
-                                        content: Text("${list_tasks[index].description}"),
-                                      )
-                                    );
-                                  }, icon: Icon(Icons.crisis_alert,
-                                      color: list_tasks[index].priority ==
-                                              Priority.basic
-                                          ? Colors.grey
-                                          : list_tasks[index].priority ==
-                                                  Priority.urgent
-                                              ? Colors.orange[300]
-                                              : list_tasks[index].priority ==
-                                                      Priority.important
-                                                  ? Colors.red[300]
-                                                  : Colors.red)),
-                                ],
-                              ),
-                              isDateSliderShow ? SizedBox() :
-                              Align(
-                                alignment: Alignment.bottomRight,
-                                  child: isDateSliderShow ? Text("") : Text("${list_tasks[index].startDate?.day} / ${list_tasks[index].startDate?.month}", style: TextStyle(fontSize: 15),)
-                              ),
-                            ],
-                          ),
-                        ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-              ),
-            ),
+                    ),
+                  ),
           ],
         ),
       ),
@@ -444,13 +516,14 @@ class _ListTaskState extends State<ListTask> {
         onPressed: () async {
           Task newTask =
               await Navigator.pushNamed(context, "/create-task") as Task;
-          setState(() {
-            if(newTask != null)
-              {
-                Task.tasks.add(newTask);
-              }
 
-          });
+          if (newTask != null) {
+            setState(() {
+              Task.tasks.add(newTask);
+              list_tasks.add(newTask);
+              Task.save();
+            });
+          }
         },
         child:
             const Icon(Icons.add_task_outlined, color: Colors.white, size: 28),
