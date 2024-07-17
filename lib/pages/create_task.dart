@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 import 'package:to_do/models/Task.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:uuid/uuid.dart';
 
 class CreateTask extends StatefulWidget {
-  final int? id;
+  final String? id;
   final String? initialTitle;
   final String? initialDescription;
   final Priority? initialPriority;
@@ -27,13 +28,14 @@ class CreateTask extends StatefulWidget {
 
 /// State for CreateTask
 class CreateTaskState extends State<CreateTask> {
-  DateRangePickerView _dateRangePickerView = DateRangePickerView.month;
+  List<Task> tasks = [];
   DateTime? startDate;
   late TextEditingController titleController;
   late TextEditingController descController;
   late Priority selectedPriority;
-  int? id;
+  late String id;
   bool? isUpdate;
+  Task? newTask;
 
   @override
   void initState() {
@@ -43,7 +45,6 @@ class CreateTaskState extends State<CreateTask> {
     isUpdate = widget.initialPriority == null ? false : true;
     selectedPriority = widget.initialPriority ?? Priority.basic;
     startDate = widget.initialStartDate;
-    id = widget.id;
   }
 
   void _onSelectionChanged(DateRangePickerSelectionChangedArgs args) {
@@ -73,12 +74,14 @@ class CreateTaskState extends State<CreateTask> {
             Align(
               alignment: Alignment.bottomCenter,
               child: Text(
-                "Select a date",
+                "Pick a date",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
+                  fontSize: 25
                 ),
               ),
             ),
+            SizedBox(height: 20,),
             Container(
               color: Colors.white,
               child: Padding(
@@ -117,7 +120,7 @@ class CreateTaskState extends State<CreateTask> {
               height: 25,
             ),
             Container(
-              color: Colors.grey[300],
+              color: Colors.white,
               child: Column(
                 children: [
                   TextField(
@@ -193,7 +196,7 @@ class CreateTaskState extends State<CreateTask> {
                         }
                       });
                     },
-                    child: Text('Select a priority'),
+                    child: Text('${selectedPriority.name.toString().toUpperCase()}'),
                   )
                 ],
               ),
@@ -208,23 +211,20 @@ class CreateTaskState extends State<CreateTask> {
           if (titleController.text.isEmpty ||
               descController.text.isEmpty ||
               startDate == null){ print(titleController.text.isEmpty); return;};
-          if (isUpdate!) {
-            Task.tasks[id!].title = titleController.text;
-            Task.tasks[id!].description = descController.text;
-            Task.tasks[id!].startDate = startDate;
-            Task.tasks[id!].priority = selectedPriority;
-            Navigator.pop(context);
-          }else {
-            Navigator.pop(
-                context,
-                new Task(
-                    id: Task.tasks.length,
-                    title: titleController.text,
-                    description: descController.text,
-                    startDate: startDate,
-                    priority: selectedPriority,
-                    isCompleted: false));
-          }
+
+          var uuid = Uuid();
+          String newId = uuid.v4();
+
+          Navigator.pop(
+              context,
+              new Task(
+                  id: newId,
+                  title: titleController.text,
+                  description: descController.text,
+                  startDate: startDate,
+                  priority: selectedPriority,
+                  isCompleted: false));
+
           },
         child: const Icon(Icons.save, color: Colors.white, size: 28),
       ),

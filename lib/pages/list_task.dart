@@ -1,12 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:to_do/DataManager.dart';
 import 'package:to_do/models/Task.dart';
 import 'package:date_picker_timeline/date_picker_timeline.dart';
 import 'package:segmented_button_slide/segmented_button_slide.dart';
 import 'package:animate_icons/animate_icons.dart';
+import 'package:intl/intl.dart';
 
-List<Task> list_tasks = List.from(Task.tasks);
+List<Task> list_tasks = [];
 
 class ListTask extends StatefulWidget {
   const ListTask({super.key});
@@ -16,6 +18,8 @@ class ListTask extends StatefulWidget {
 }
 
 class _ListTaskState extends State<ListTask> {
+  List<Task> tasks = [];
+  final DataManager<Task> taskManager = DataManager<Task>();
   final TextEditingController searchController = TextEditingController();
   final FocusNode searchFocusNode = FocusNode();
   final AnimateIconController iconController = AnimateIconController();
@@ -34,22 +38,22 @@ class _ListTaskState extends State<ListTask> {
     if (query.isEmpty) {
       setState(() {
         if (selectedDate != null) {
-          list_tasks = Task.getByDate(selectedDate!);
+          list_tasks = Task.getByDate(list_tasks, -1, selectedDate!);
         } else {
-          list_tasks = Task.tasks;
+          list_tasks = tasks;
         }
       });
     } else {
       if (selectedDate != null) {
         setState(() {
-          list_tasks = Task.getByDate(selectedDate!)
+          list_tasks = Task.getByDate(list_tasks, -1, selectedDate!)
               .where(
                   (e) => e.title!.toLowerCase().contains(query.toLowerCase()))
               .toList();
         });
       } else {
         setState(() {
-          list_tasks = Task.tasks
+          list_tasks = tasks
               .where(
                   (e) => e.title!.toLowerCase().contains(query.toLowerCase()))
               .toList();
@@ -61,12 +65,12 @@ class _ListTaskState extends State<ListTask> {
   void showAll() {
     setState(() {
       selectedDate = null;
-      list_tasks = new List.from(Task.tasks);
+      list_tasks = new List.from(tasks);
     });
   }
 
   void checkAll(int i) {
-    for (Task task in Task.tasks) {
+    for (Task task in tasks) {
       task.isCompleted = i == 1 ? true : false;
     }
     if (i == 1) {
@@ -89,12 +93,18 @@ class _ListTaskState extends State<ListTask> {
   }
 
   Future<void> loadTasks() async {
-    // Assuming this widget has an asynchronous context (e.g., inside an async function)
-    List<Task> tasks = await Task.get();
+
+    taskManager.setup(
+      encode: Task.encode,
+      decode: Task.decode,
+      storageKey: 'tasks_key'
+    );
+    List<Task> fetchedTasks = await taskManager.get();
+    //List<Task> tasks = await Task.get();
 
     setState(() {
-      Task.tasks = tasks;
-      list_tasks = Task.sortByPriority(); // Assuming list_tasks is also a List<Task> in your State
+      tasks = fetchedTasks;
+      list_tasks = fetchedTasks;
     });
   }
 
@@ -110,7 +120,7 @@ class _ListTaskState extends State<ListTask> {
   Widget build(BuildContext context) {
     return Scaffold(
       //endDrawer: NavBar(),
-      backgroundColor: Colors.grey,
+      backgroundColor: Colors.grey[300],
       body: SafeArea(
         child: Column(
           children: [
@@ -127,17 +137,16 @@ class _ListTaskState extends State<ListTask> {
                             onPressed: () {
                               Navigator.pushNamed(context, "/calendar");
                             },
-                            icon: Icon(Icons.calendar_month)),
+                            icon: Icon(Icons.calendar_month), iconSize: 30, color: Colors.black87,),
                         // IconButton(
                         //     onPressed: () {
-                        //       Task.save();
+                        //       taskManager.save();
                         //     },
                         //     icon: Icon(Icons.save)),
                         // IconButton(
                         //     onPressed: () {
                         //       setState(() {
-                        //         Task.get();
-                        //         list_tasks = Task.tasks;
+                        //         taskManager.get();
                         //       });
                         //     },
                         //     icon: Icon(Icons.get_app)),
@@ -174,13 +183,13 @@ class _ListTaskState extends State<ListTask> {
                   ),
                   Text(
                     "To-Do it!",
-                    style: TextStyle(fontSize: 24),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 20),
                     child: AnimateIcons(
                       startIcon: Icons.select_all,
-                      endIcon: Icons.date_range,
+                      endIcon: Icons.calendar_view_day_rounded,
                       size: 30.0,
                       controller: iconController,
                       // add this tooltip for the start icon
@@ -234,15 +243,16 @@ class _ListTaskState extends State<ListTask> {
                     child: Column(
                       children: [
                         DatePicker(
+                          initialSelectedDate: DateTime.now(),
                           height: 120,
                           DateTime.now(),
-                          selectionColor: Colors.black12,
+                          selectionColor: Color(0xff447170),
                           daysCount: _getDaysCount(),
                           selectedTextColor: Colors.white,
                           onDateChange: (date) {
                             setState(() {
                               selectedDate = date;
-                              list_tasks = new List.from(Task.getByDate(date));
+                              list_tasks = List.from(Task.getByDate(tasks, selectedOption, date));
                             });
                           },
                         ),
@@ -264,21 +274,20 @@ class _ListTaskState extends State<ListTask> {
                       onChange: (selected) {
                         setState(() {
                           selectedOption = selected;
-                          List<Task>? par =
-                              selectedDate != null ? list_tasks : null;
+                          list_tasks = Task.getByDate(tasks, -1, selectedDate!);
                           switch (selectedOption) {
                             case 0:
                               list_tasks = new List.from(
-                                  Task.sortByPriority(parTasks: par));
+                                  Task.sortByPriority(tasks,parTasks: list_tasks));
                             case 1:
                               list_tasks = new List.from(
-                                  Task.sortByCompleted(parTasks: par));
+                                  Task.getCompleted(tasks,parTasks: list_tasks));
                           }
                         });
                       },
                       colors: SegmentedButtonSlideColors(
                           barColor: Colors.grey.withOpacity(0.2),
-                          backgroundSelectedColor: Color(0xff015958),
+                          backgroundSelectedColor: Color(0xff5e9e9d),
                           foregroundSelectedColor: Colors.white,
                           foregroundUnselectedColor: Colors.black,
                           hoverColor: Colors.grey.withOpacity(0.8)),
@@ -304,24 +313,22 @@ class _ListTaskState extends State<ListTask> {
                       onChange: (selected) {
                         setState(() {
                           selectedOption = selected;
-                          List<Task>? par =
-                              selectedDate != null ? list_tasks : null;
                           switch (selectedOption) {
                             case 0:
                               list_tasks = new List.from(
-                                  Task.sortByPriority(parTasks: par));
+                                  Task.sortByPriority(list_tasks,parTasks: tasks));
                             case 1:
                               list_tasks =
-                                  new List.from(Task.sortByDate(parTasks: par));
+                                  new List.from(Task.sortByDate(list_tasks,parTasks: tasks));
                             case 2:
                               list_tasks = new List.from(
-                                  Task.sortByCompleted(parTasks: par));
+                                  Task.getCompleted(list_tasks,parTasks: tasks));
                           }
                         });
                       },
                       colors: SegmentedButtonSlideColors(
                           barColor: Colors.grey.withOpacity(0.2),
-                          backgroundSelectedColor: Color(0xff015958),
+                          backgroundSelectedColor: Color(0xff5e9e9d),
                           foregroundSelectedColor: Colors.white,
                           foregroundUnselectedColor: Colors.black,
                           hoverColor: Colors.grey.withOpacity(0.8)),
@@ -375,30 +382,30 @@ class _ListTaskState extends State<ListTask> {
                               } else if (direction ==
                                   DismissDirection.endToStart) {
                                 setState(() {
-                                  Task.tasks.removeAt(index);
+                                  tasks.removeAt(index);
                                   list_tasks.removeAt(index);
+                                  taskManager.save(tasks);
                                   if (isDateSliderShow &&
                                       selectedDate != null) {
                                     switch (selectedOption) {
                                       case 0:
                                         list_tasks = new List.from(
-                                            Task.sortByPriority(parTasks: list_tasks));
+                                            Task.sortByPriority(tasks,parTasks: list_tasks));
                                       case 1:
                                         list_tasks =
-                                        new List.from(Task.sortByDate(parTasks: list_tasks));
+                                        new List.from(Task.sortByDate(tasks,parTasks: list_tasks));
                                       case 2:
                                         list_tasks = new List.from(
-                                            Task.sortByCompleted(parTasks: list_tasks));
+                                            Task.getCompleted(tasks,parTasks: list_tasks));
                                     }
-                                    list_tasks = Task.getByDate(selectedDate!);
                                   } else {
                                     switch (selectedOption) {
                                       case 0:
                                         list_tasks = new List.from(
-                                            Task.sortByPriority(parTasks: list_tasks));
+                                            Task.sortByPriority(tasks,parTasks: list_tasks));
                                       case 1:
                                         list_tasks = new List.from(
-                                            Task.sortByCompleted(parTasks: list_tasks));
+                                            Task.getCompleted(tasks,parTasks: list_tasks));
                                     }
                                   }
                                 });
@@ -422,7 +429,7 @@ class _ListTaskState extends State<ListTask> {
                                       list_tasks[index].isCompleted!
                                           ? Icons.check_box
                                           : Icons.check_box_outline_blank,
-                                      color: Color(0xff026873),
+                                      color: Color(0xff3fa5a4),
                                     ),
                                   ),
                                 ),
@@ -494,7 +501,7 @@ class _ListTaskState extends State<ListTask> {
                                             child: isDateSliderShow
                                                 ? Text("")
                                                 : Text(
-                                                    "${list_tasks[index].startDate?.day} / ${list_tasks[index].startDate?.month}",
+                                                    "${new DateFormat("MMMEd").format(DateTime(list_tasks[index].startDate!.year, list_tasks[index].startDate!.month, list_tasks[index].startDate!.day))}",
                                                     style:
                                                         TextStyle(fontSize: 15),
                                                   )),
@@ -519,9 +526,9 @@ class _ListTaskState extends State<ListTask> {
 
           if (newTask != null) {
             setState(() {
-              Task.tasks.add(newTask);
+              tasks.add(newTask);
               list_tasks.add(newTask);
-              Task.save();
+              taskManager.add(newTask);
             });
           }
         },

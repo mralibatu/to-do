@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:to_do/models/Task.dart';
 import 'package:animate_icons/animate_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:to_do/DataManager.dart';
+import 'package:readmore/readmore.dart';
 
 bool isDarkMode = false;
 int j = 0;
+List<Task> list_tasks = [];
 
 class Calendar extends StatefulWidget {
   const Calendar({super.key});
@@ -15,11 +18,29 @@ class Calendar extends StatefulWidget {
 
 class _CalendarState extends State<Calendar> {
   final AnimateIconController iconController = AnimateIconController();
+  final DataManager<Task> taskManager = DataManager<Task>();
 
   String getMonthName() {
     DateTime now = DateTime.now();
     final DateFormat formatter = DateFormat('MMM');
     return formatter.format(DateTime(now.year, now.month + j));
+  }
+
+  @override
+  void initState() {
+    loadTasks();
+    super.initState();
+  }
+
+  Future<void> loadTasks() async {
+    taskManager.setup(
+        encode: Task.encode, decode: Task.decode, storageKey: 'tasks_key');
+    List<Task> fetchedTasks = await taskManager.get();
+    //List<Task> tasks = await Task.get();
+
+    setState(() {
+      list_tasks = fetchedTasks;
+    });
   }
 
   @override
@@ -261,8 +282,7 @@ class CalendarDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    List<Task> currentTasks =
-        Task.getByDate(DateTime(now.year, now.month + 1, currentDay));
+    List<Task> currentTasks = Task.getByDate(list_tasks,-1, DateTime(now.year, now.month + 1, currentDay));
     return InkWell(
       onTap: () {
         currentTasks.length == 0
@@ -285,7 +305,7 @@ class CalendarDay extends StatelessWidget {
                           : currentTasks.length == 2
                               ? 220
                               : 300,
-                      width: 50,
+                      width: 300,
                       child: ListView.builder(
                         scrollDirection: Axis.vertical,
                         itemCount: currentTasks.length,
@@ -294,13 +314,27 @@ class CalendarDay extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 5),
                             child: Column(
                               children: [
-                                Text(
-                                  "${currentTasks[index].title}\n\n${currentTasks[index].description}",
-                                  style: TextStyle(
-                                      color: isDarkMode
-                                          ? Colors.white
-                                          : Colors.black),
+                                Row(
+                                  children: [
+                                    Icon(Icons.label_important),
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 20, left: 5),
+                                      child: Text("${currentTasks[index].title}\n", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),),
+                                    ),
+                                  ],
                                 ),
+                              ReadMoreText(
+                                "${currentTasks[index].description}",
+                              trimMode: TrimMode.Line,
+                              trimLines: 2,
+                              colorClickableText: Colors.redAccent[300],
+                              trimCollapsedText: 'Show more',
+                              trimExpandedText: 'Show less',
+                              moreStyle: TextStyle(
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : Colors.black),
+                            ),
                                 index < currentTasks.length - 1
                                     ? Padding(
                                         padding: const EdgeInsets.only(top: 15),
@@ -334,27 +368,31 @@ class CalendarDay extends StatelessWidget {
                           color: isDarkMode ? Colors.white : Colors.black)),
                   Text(
                     ".\n" *
-                        Task.getTaskCountByDate(DateTime(now.year, now.month + 1, currentDay), true),
+                        Task.getTaskCountByDate(
+                            DateTime(now.year, now.month + 1, currentDay),
+                            true,
+                            list_tasks),
                     style: TextStyle(
                         fontSize: 20,
                         color: isDarkMode ? Colors.white : Colors.black,
-                        height: 0.3),
+                        height: 0.3, fontWeight: FontWeight.w900),
                   ),
                 ]
               : [
                   Text("${currentDay}",
                       style: TextStyle(
                           fontSize: 25,
-                          color: isDarkMode ? Colors.white : Colors.black)),
+                          color: isDarkMode ? Colors.white : Colors.black,)),
                   Text(
                     ".\n" *
                         Task.getTaskCountByDate(
                             DateTime(now.year, now.month + 1, currentDay),
-                            true),
+                            true,
+                            list_tasks),
                     style: TextStyle(
                         fontSize: 20,
                         color: isDarkMode ? Colors.white : Colors.black,
-                        height: 0.3),
+                        height: 0.3, fontWeight: FontWeight.w900),
                   ),
                 ],
         ),
